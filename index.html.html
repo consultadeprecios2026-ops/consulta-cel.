@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta en Línea - CEL</title>
+    <!-- Librería para leer archivos Excel en el navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400,600,700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --toyota-red: #EB0A1E;
+            --toyota-black: #000000;
+            --toyota-gray: #58595b;
+            --toyota-light-gray: #f4f4f4;
+            --success-color: #10B981;
+            --error-color: #EF4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            user-select: none; /* Protección anti-selección */
+        }
+
+        body {
+            background-color: var(--toyota-light-gray);
+            color: var(--toyota-black);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--toyota-black);
+            color: white;
+            padding: 1.5rem 2rem;
+            border-bottom: 5px solid var(--toyota-red);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .brand-logo-box {
+            background-color: var(--toyota-red);
+            color: white;
+            font-weight: 900;
+            padding: 8px 12px;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            border-radius: 4px;
+        }
+
+        .brand-title h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .brand-title p {
+            font-size: 0.8rem;
+            color: #d1d5db;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid var(--toyota-gray);
+            color: #d1d5db;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            border-color: white;
+            color: white;
+        }
+
+        main {
+            flex: 1;
+            max-width: 800px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .app-view {
+            display: none !important;
+        }
+
+        .app-view.active {
+            display: block !important;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2, h3 {
+            margin-bottom: 0.5rem;
+            color: var(--toyota-black);
+        }
+
+        p {
+            color: var(--toyota-gray);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--toyota-gray);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.3s;
+            background: white;
+            user-select: text;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--toyota-red);
+        }
+
+        .btn-primary {
+            width: 100%;
+            background-color: var(--toyota-red);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary:hover {
+            background-color: #c50818;
+        }
+
+        .btn-secondary {
+            background-color: var(--toyota-gray);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .btn-secondary:hover {
+            background-color: #404143;
+        }
+
+        .view-footer-links {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .view-footer-links a {
+            color: var(--toyota-red);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .view-footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        .error-msg {
+            color: var(--error-color);
+            font-size: 0.85rem;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .success-msg {
+            color: var(--success-color);
+            font-size: 0.85rem;
+            margin-top: 8px;
+            display: none;
+        }
+
+        /* Buscador Público */
+        .search-box {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            outline: none;
+            text-transform: uppercase;
+            user-select: text;
+        }
+
+        .search-box input:focus {
+            border-color: var(--toyota-red);
+        }
+
+        .search-box button {
+            background-color: var(--toyota-red);
+            color: white;
+            border: none;
+            padding: 0 24px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Resultados Múltiples */
+        #result-container {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .result-card {
+            padding: 1rem 1.25rem;
+            border-radius: 6px;
+        }
+
+        .result-card.available {
+            background-color: #ecfdf5;
+            border: 2px solid var(--success-color);
+            color: #065f46;
+        }
+
+        .result-card.not-available {
+            background-color: #fef2f2;
+            border: 2px solid var(--error-color);
+            color: #991b1b;
+        }
+
+        .result-card.not-found {
+            background-color: #f3f4f6;
+            border: 2px solid var(--toyota-gray);
+            color: var(--toyota-gray);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 900;
+            padding: 4px 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .available .status-badge { background-color: var(--success-color); color: white; }
+        .not-available .status-badge { background-color: var(--error-color); color: white; }
+        .not-found .status-badge { background-color: var(--toyota-gray); color: white; }
+
+        .part-code { font-size: 1rem; font-weight: 700; }
+        .part-desc { font-size: 0.9rem; margin-bottom: 6px; opacity: 0.95; }
+        .price-box { font-size: 0.95rem; font-weight: 700; color: var(--toyota-black); background: rgba(255,255,255,0.7); padding: 6px 10px; border-radius: 4px; display: inline-block; }
+
+        .client-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+        .client-table th, .client-table td {
+            border: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: left;
+        }
+        .client-table th {
+            background-color: #f9fafb;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.8rem;
+            color: var(--toyota-gray);
+            border-top: 1px solid #e5e7eb;
+            background: white;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <header>
+        <div class="brand-container">
+            <div class="brand-logo-box">CEL</div>
+            <div class="brand-title">
+                <h1>Consulta en Línea</h1>
+                <p>Control de Existencias de Repuestos</p>
+            </div>
+        </div>
+        <button id="navTopBtn" class="nav-btn" onclick="irAlModuloAdmin()">⚙️ Módulo Administrativo</button>
+    </header>
+
+    <main>
+        <!-- VISTA 0: Login de Clientes -->
+        <div id="viewClientLogin" class="card app-view active">
+            <h3>Acceso Autorizado para Clientes</h3>
+            <p>Ingrese el usuario y contraseña asignados para consultar existencias y precios en tiempo real.</p>
+            
+            <div class="form-group">
+                <label>Usuario del Cliente</label>
+                <input type="text" id="clientUser" placeholder="Ej. CLIENTE01" style="text-transform: uppercase;" onkeypress="handleClientKey(event)">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="clientPass" placeholder="••••••••" onkeypress="handleClientKey(event)">
+            </div>
+            <div id="clientLoginError" class="error-msg">Usuario o contraseña de cliente inválidos.</div>
+            
+            <button class="btn-primary" onclick="validateClientLogin()" style="margin-top: 10px;">Ingresar al Sistema</button>
+        </div>
+
+        <!-- VISTA 1: Consulta Pública -->
+        <div id="viewPublic" class="card app-view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="margin: 0;">Consultar Códigos de Parte</h2>
+                <button class="nav-btn" style="color:var(--toyota-red); border-color:var(--toyota-red); padding: 4px 10px;" onclick="logoutClient()">Cerrar Sesión</button>
+            </div>
+            <p>Ingrese uno o varios códigos separados por espacio (Ej. BBGJ1003 BBGN1005).</p>
+            
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Ej. BBGJ1003 BBGN1005..." onkeypress="handleKeyPress(event)">
+                <button onclick="searchInventory()">Consultar</button>
+            </div>
+
+            <div id="result-container"></div>
+        </div>
+
+        <!-- VISTA 2: Login Admin Maestro -->
+        <div id="viewLogin" class="card app-view">
+            <h3>Acceso Restringido - Administrador</h3>
+            <p>Ingrese sus credenciales maestras.</p>
+            
+            <div class="form-group">
+                <label>Usuario Maestro</label>
+                <input type="text" id="loginUser" placeholder="Ej. JMUJICA" style="text-transform: uppercase;" onkeypress="handleLoginKey(event)">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="loginPass" placeholder="••••••••" onkeypress="handleLoginKey(event)">
+            </div>
+            <div id="loginError" class="error-msg">Credenciales maestras incorrectas.</div>
+            
+            <button class="btn-primary" onclick="validateLogin()" style="margin-top: 10px;">Ingresar como Admin</button>
+            
+            <div class="view-footer-links">
+                <a onclick="switchView('viewClientLogin')">⬅ Volver al Acceso de Clientes</a>
+            </div>
+        </div>
+
+        <!-- VISTA 3: Panel Administrativo -->
+        <div id="viewAdminDashboard" class="card app-view" style="border-left: 4px solid var(--toyota-red); background: #fffdfd;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3>Panel de Administración</h3>
+                <button class="nav-btn" style="color:var(--toyota-red); border-color:var(--toyota-red);" onclick="logoutAdmin()">Cerrar Sesión Admin</button>
+            </div>
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">
+                Gestione inventarios, archivos máster y las credenciales de acceso de sus clientes.
+            </p>
+
+            <!-- Sección: Gestión de Clientes -->
+            <div style="background: white; padding: 1.25rem; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem; font-size: 1rem; color: var(--toyota-black);">Gestión de Accesos de Clientes</h4>
+                <p style="font-size: 0.85rem; color: #666; margin-bottom: 1rem;">Cree, modifique o elimine los usuarios y contraseñas de sus clientes.</p>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <input type="text" id="newClientUser" placeholder="Usuario (Ej. TALLER_CARACAS)" style="flex: 1; min-width: 150px; padding: 8px; text-transform: uppercase; border: 1px solid #ccc; border-radius: 4px; user-select: text;">
+                    <input type="text" id="newClientPass" placeholder="Contraseña" style="flex: 1; min-width: 150px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; user-select: text;">
+                    <button class="btn-secondary" onclick="addNewClient()" style="padding: 8px 16px;">Agregar Cliente</button>
+                </div>
+                <div id="clientAddMsg" class="success-msg" style="margin-bottom: 10px;"></div>
+
+                <div style="max-height: 200px; overflow-y: auto;">
+                    <table class="client-table">
+                        <thead>
+                            <tr>
+                                <th>Usuario Cliente</th>
+                                <th>Contraseña</th>
+                                <th style="text-align: center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sección de Carga: Stock Diario -->
+            <div style="background: white; padding: 1.25rem; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem; font-size: 1rem; color: var(--toyota-black);">Actualización Diaria de Stock</h4>
+                <input type="file" id="excelFileStock" accept=".xlsx, .xls, .csv" onchange="handleStockUpload(event)">
+                <div id="uploadStatusStock" class="status-info" style="margin-top: 8px; font-size: 0.85rem;"></div>
+            </div>
+
+            <!-- Sección de Carga: Máster (Costos) -->
+            <div style="background: white; padding: 1.25rem; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem; font-size: 1rem; color: var(--toyota-black);">Actualización de Máster (Costos)</h4>
+                <input type="file" id="excelFileMaster" accept=".xlsx, .xls, .csv" onchange="handleMasterUpload(event)">
+                <div id="uploadStatusMaster" class="status-info" style="margin-top: 8px; font-size: 0.85rem;"></div>
+            </div>
+            
+            <div style="margin-top: 1.5rem;">
+                <button class="nav-btn" style="color:var(--toyota-black); border-color:var(--toyota-gray);" onclick="switchView('viewPublic')">⬅ Ir a Pantalla de Consulta</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Consulta en Línea (CEL) - Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        let _inv_cache = [];
+        let _mst_cache = [];
+        let _client_db = [];
+
+        // Bloqueo de inspección de código
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'u')) {
+                e.preventDefault();
+                alert('Acción restringida.');
+                return false;
+            }
+        });
+
+        window.onload = function() {
+            const savedClients = localStorage.getItem('cel_clients_db');
+            if (savedClients) {
+                try { _client_db = JSON.parse(savedClients); } catch(e) { _client_db = []; }
+            } else {
+                _client_db = [
+                    { user: "CLIENTE1", pass: "TOYOTA2026" },
+                    { user: "TALLER01", pass: "123456" }
+                ];
+                localStorage.setItem('cel_clients_db', JSON.stringify(_client_db));
+            }
+
+            const savedStock = localStorage.getItem('toyota_inventory');
+            if (savedStock) {
+                try { _inv_cache = JSON.parse(savedStock); } catch(e) { _inv_cache = []; }
+            } else {
+                _inv_cache = [
+                    { codigo: "BBGJ1003", descripcion: "MANUAL LAND CRUISER", cantidad: 15 },
+                    { codigo: "BBGN1005", descripcion: "MANUAL HILUX 2004", cantidad: 0 }
+                ];
+                localStorage.setItem('toyota_inventory', JSON.stringify(_inv_cache));
+            }
+
+            if (!localStorage.getItem('admin_pass')) {
+                localStorage.setItem('admin_pass', '19505578');
+            }
+
+            if (localStorage.getItem('client_logged') === 'true') {
+                switchView('viewPublic');
+            } else {
+                switchView('viewClientLogin');
+            }
+        };
+
+        function switchView(viewId) {
+            const views = document.querySelectorAll('.app-view');
+            views.forEach(el => el.classList.remove('active'));
+
+            const target = document.getElementById(viewId);
+            if (target) target.classList.add('active');
+
+            const topBtn = document.getElementById('navTopBtn');
+            const isAdminLogged = localStorage.getItem('admin_logged') === 'true';
+
+            if (viewId === 'viewClientLogin' || viewId === 'viewPublic') {
+                topBtn.innerText = isAdminLogged ? "⚙ Panel Admin" : "⚙️️ Módulo Administrativo";
+                topBtn.onclick = irAlModuloAdmin;
+            } else {
+                topBtn.innerText = "🔍 Volver";
+                topBtn.onclick = function() { 
+                    if (localStorage.getItem('client_logged') === 'true') {
+                        switchView('viewPublic');
+                    } else {
+                        switchView('viewClientLogin');
+                    }
+                };
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- GESTIÓN DE CLIENTES CON VISUALIZACIÓN Y EDICIÓN ---
+        function renderClientTable() {
+            const tbody = document.getElementById('clientTableBody');
+            tbody.innerHTML = '';
+            _client_db.forEach((c, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${c.user}</strong></td>
+                        <td><span id="pass-txt-${index}">${c.pass}</span></td>
+                        <td style="text-align: center; display: flex; gap: 5px; justify-content: center;">
+                            <button class="nav-btn" style="color:var(--toyota-black); border-color:var(--toyota-gray); padding: 2px 8px; font-size:0.75rem;" onclick="editClient(${index})">Editar</button>
+                            <button class="nav-btn" style="color:red; border-color:red; padding: 2px 8px; font-size:0.75rem;" onclick="removeClient(${index})">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function addNewClient() {
+            const u = document.getElementById('newClientUser').value.trim().toUpperCase();
+            const p = document.getElementById('newClientPass').value.trim();
+            const msg = document.getElementById('clientAddMsg');
+
+            if (!u || !p) {
+                alert("Ingrese usuario y contraseña válidos.");
+                return;
+            }
+
+            if (_client_db.some(c => c.user === u)) {
+                alert("Este usuario cliente ya existe.");
+                return;
+            }
+
+            _client_db.push({ user: u, pass: p });
+            localStorage.setItem('cel_clients_db', JSON.stringify(_client_db));
+            
+            document.getElementById('newClientUser').value = '';
+            document.getElementById('newClientPass').value = '';
+            msg.innerText = "¡Cliente agregado con éxito!";
+            renderClientTable();
+            setTimeout(() => { msg.innerText = ''; }, 3000);
+        }
+
+        function editClient(index) {
+            const currentClient = _client_db[index];
+            const newPass = prompt(`Ingrese la nueva contraseña para el usuario "${currentClient.user}":`, currentClient.pass);
+            
+            if (newPass !== null) {
+                const trimmedPass = newPass.trim();
+                if (trimmedPass === "") {
+                    alert("La contraseña no puede estar vacía.");
+                    return;
+                }
+                _client_db[index].pass = trimmedPass;
+                localStorage.setItem('cel_clients_db', JSON.stringify(_client_db));
+                renderClientTable();
+                alert("¡Contraseña actualizada con éxito!");
+            }
+        }
+
+        function removeClient(index) {
+            if (confirm(`¿Seguro que desea eliminar el acceso al cliente "${_client_db[index].user}"?`)) {
+                _client_db.splice(index, 1);
+                localStorage.setItem('cel_clients_db', JSON.stringify(_client_db));
+                renderClientTable();
+            }
+        }
+
+        function handleClientKey(e) { if (e.key === 'Enter') validateClientLogin(); }
+
+        function validateClientLogin() {
+            const u = document.getElementById('clientUser').value.trim().toUpperCase();
+            const p = document.getElementById('clientPass').value.trim();
+            const err = document.getElementById('clientLoginError');
+
+            const found = _client_db.find(c => c.user === u && c.pass === p);
+            if (found) {
+                localStorage.setItem('client_logged', 'true');
+                localStorage.setItem('client_user_active', u);
+                err.style.display = 'none';
+                document.getElementById('clientUser').value = '';
+                document.getElementById('clientPass').value = '';
+                switchView('viewPublic');
+            } else {
+                err.style.display = 'block';
+            }
+        }
+
+        function logoutClient() {
+            localStorage.removeItem('client_logged');
+            localStorage.removeItem('client_user_active');
+            switchView('viewClientLogin');
+        }
+
+        function irAlModuloAdmin() {
+            const isAdminLogged = localStorage.getItem('admin_logged') === 'true';
+            if (isAdminLogged) {
+                switchView('viewAdminDashboard');
+                renderClientTable();
+                document.getElementById('uploadStatusStock').innerText = `Stock activo: ${_inv_cache.length} ítems.`;
+                document.getElementById('uploadStatusMaster').innerText = _mst_cache.length > 0 ? `Máster activo en memoria: ${_mst_cache.length} ítems.` : `Cargue su archivo máster.`;
+            } else {
+                switchView('viewLogin');
+            }
+        }
+
+        function handleLoginKey(e) { if (e.key === 'Enter') validateLogin(); }
+
+        function validateLogin() {
+            const userEl = document.getElementById('loginUser');
+            const passEl = document.getElementById('loginPass');
+            const errorDiv = document.getElementById('loginError');
+
+            const user = userEl.value.trim().toUpperCase();
+            const pass = passEl.value.trim();
+            const storedPass = localStorage.getItem('admin_pass') || '19505578';
+
+            if (user === "JMUJICA" && pass === storedPass) {
+                localStorage.setItem('admin_logged', 'true');
+                userEl.value = '';
+                passEl.value = '';
+                errorDiv.style.display = 'none';
+                switchView('viewAdminDashboard');
+                renderClientTable();
+                document.getElementById('uploadStatusStock').innerText = `Stock activo: ${_inv_cache.length} ítems.`;
+                document.getElementById('uploadStatusMaster').innerText = _mst_cache.length > 0 ? `Máster activo en memoria: ${_mst_cache.length} ítems.` : `Cargue su archivo máster.`;
+            } else {
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem('admin_logged');
+            switchView('viewClientLogin');
+        }
+
+        function handleStockUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+
+                    _inv_cache = jsonRows.map(row => {
+                        const keys = Object.keys(row);
+                        const findKey = (terms) => keys.find(k => terms.some(t => k.toLowerCase().includes(t)));
+                        return {
+                            codigo: findKey(['cod', 'codigo', 'part']) ? String(row[findKey(['cod', 'codigo', 'part'])]).trim().toUpperCase() : '',
+                            descripcion: findKey(['desc', 'nombre']) ? String(row[findKey(['desc', 'nombre'])]).trim() : 'REPUESTO',
+                            cantidad: findKey(['cant', 'stock']) ? Number(row[findKey(['cant', 'stock'])]) : 1
+                        };
+                    }).filter(item => item.codigo !== '');
+
+                    localStorage.setItem('toyota_inventory', JSON.stringify(_inv_cache));
+                    document.getElementById('uploadStatusStock').style.color = "var(--success-color)";
+                    document.getElementById('uploadStatusStock').innerText = `Stock actualizado (${_inv_cache.length} ítems).`;
+                } catch(err) { 
+                    document.getElementById('uploadStatusStock').style.color = "var(--error-color)";
+                    document.getElementById('uploadStatusStock').innerText = "Error al leer stock"; 
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handleMasterUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const statusDiv = document.getElementById('uploadStatusMaster');
+            statusDiv.style.color = "var(--toyota-gray)";
+            statusDiv.innerText = "Procesando archivo máster gigante (100k+ registros)... Por favor espere.";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    
+                    let sheetName = workbook.SheetNames.find(name => name.toUpperCase().includes('MASTER')) || workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+                    if (jsonRows.length === 0) {
+                        statusDiv.style.color = "var(--error-color)";
+                        statusDiv.innerText = "El archivo Excel máster está vacío.";
+                        return;
+                    }
+
+                    let headerRowIndex = 0;
+                    let colCode = -1, colDesc = -1, colCost = -1;
+
+                    for (let i = 0; i < Math.min(jsonRows.length, 10); i++) {
+                        let row = jsonRows[i].map(h => String(h).trim().toUpperCase());
+                        let cCode = row.findIndex(h => h.includes('CODIGO') || h.includes('COD'));
+                        let cDesc = row.findIndex(h => h.includes('DESCRPCION') || h.includes('DESCRIPCIÓN') || h.includes('DESC') || h.includes('NOMBRE'));
+                        let cCost = row.findIndex(h => h.includes('COSTO') || h.includes('PRECIO') || h.includes('VALOR'));
+
+                        if (cCode !== -1) {
+                            headerRowIndex = i;
+                            colCode = cCode;
+                            colDesc = cDesc !== -1 ? cDesc : (cCode + 1);
+                            colCost = cCost !== -1 ? cCost : (cCode + 2);
+                            break;
+                        }
+                    }
+
+                    if (colCode === -1) {
+                        colCode = 1; colDesc = 4; colCost = 3; headerRowIndex = 0;
+                    }
+
+                    let tempMaster = [];
+                    for (let i = headerRowIndex + 1; i < jsonRows.length; i++) {
+                        let row = jsonRows[i];
+                        if (!row || row.length === 0) continue;
+
+                        let codigo = row[colCode] !== undefined ? String(row[colCode]).trim().toUpperCase() : '';
+                        let descripcion = row[colDesc] !== undefined ? String(row[colDesc]).trim() : '';
+                        let costoRaw = row[colCost];
+
+                        if (!codigo || codigo === 'UNDEFINED' || codigo === '') continue;
+
+                        let costo = 0;
+                        if (costoRaw !== undefined && costoRaw !== '') {
+                            if (typeof costoRaw === 'number') {
+                                costo = costoRaw;
+                            } else {
+                                let cleanStr = String(costoRaw).replace(/[^0-9.,]/g, '').replace(',', '.');
+                                costo = parseFloat(cleanStr) || 0;
+                            }
+                        }
+
+                        tempMaster.push({ codigo: codigo, descripcion: descripcion || 'REPUESTO GENERAL', costo: costo });
+                    }
+
+                    _mst_cache = tempMaster;
+                    statusDiv.style.color = "var(--success-color)";
+                    statusDiv.innerText = `¡Éxito! Máster activo en memoria (${_mst_cache.length} ítems).`;
+                } catch (error) {
+                    statusDiv.style.color = "var(--error-color)";
+                    statusDiv.innerText = "Error al procesar el archivo Excel máster.";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handleKeyPress(e) { if (e.key === 'Enter') searchInventory(); }
+
+        function _calc_p(c) {
+            if (!c || isNaN(c) || c <= 0) return { p1: 0, p2: 0 };
+            return {
+                p1: Math.ceil(c * 1.65 * 1.16),
+                p2: Math.ceil((c / 0.85) * 1.16 / 0.97)
+            };
+        }
+
+        function searchInventory() {
+            const queryInput = document.getElementById('searchInput');
+            const rawQuery = queryInput.value.trim().toUpperCase();
+            const container = document.getElementById('result-container');
+
+            if (!rawQuery) {
+                container.innerHTML = `<div class="result-card not-found"><p>Por favor, ingresa al menos un código.</p></div>`;
+                return;
+            }
+
+            if (_mst_cache.length === 0) {
+                container.innerHTML = `<div class="result-card not-found"><p>⚠️ Atención: El archivo Máster no está cargado en memoria de esta sesión. El administrador debe cargarlo desde el módulo correspondiente.</p></div>`;
+                return;
+            }
+
+            const queryCodes = rawQuery.split(/\s+/).filter(c => c.length > 0);
+            let htmlContent = '';
+
+            queryCodes.forEach(query => {
+                const masterItem = _mst_cache.find(m => m.codigo === query || m.codigo.includes(query));
+                const stockItem = _inv_cache.find(i => i.codigo === query || i.codigo.includes(query));
+
+                if (!masterItem) {
+                    htmlContent += `<div class="result-card not-found"><div class="result-header"><span class="part-code">${query}</span><span class="status-badge">NO REGISTRADO</span></div></div>`;
+                    return;
+                }
+
+                const precios = _calc_p(masterItem.costo);
+                const desc = masterItem.descripcion || 'REPUESTO GENERAL';
+                const cantidad = stockItem ? stockItem.cantidad : 0;
+
+                if (cantidad > 0) {
+                    htmlContent += `<div class="result-card available"><div class="result-header"><span class="part-code">${masterItem.codigo}</span><span class="status-badge">DISPONIBLE</span></div><div class="part-desc">${desc}</div><div class="price-box">💵 <strong>${precios.p1} $</strong> / <strong>${precios.p2} $</strong></div></div>`;
+                } else {
+                    htmlContent += `<div class="result-card not-available"><div class="result-header"><span class="part-code">${masterItem.codigo}</span><span class="status-badge">NO DISPONIBLE</span></div><div class="part-desc">${desc}</div><div class="price-box">💵 <strong>${precios.p1} $</strong> / <strong>${precios.p2} $</strong></div></div>`;
+                }
+            });
+
+            container.innerHTML = htmlContent;
+        }
+    </script>
+</body>
+</html>
